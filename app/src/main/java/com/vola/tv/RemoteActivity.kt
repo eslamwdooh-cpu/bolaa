@@ -5,7 +5,7 @@ import android.net.wifi.WifiManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.vola.tv.databinding.ActivityRemoteBinding
-import java.util.Formatter
+import android.text.format.Formatter
 // Shows TV IP + Pair Code - phone connects on same WiFi to http://IP:8080
 class RemoteActivity: AppCompatActivity(){
   lateinit var b: ActivityRemoteBinding
