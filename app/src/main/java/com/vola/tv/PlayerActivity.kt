@@ -2,8 +2,8 @@
 package com.vola.tv
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.MediaItem
 import com.vola.tv.databinding.ActivityPlayerBinding
 class PlayerActivity: AppCompatActivity(){
   var player:ExoPlayer?=null; lateinit var b: ActivityPlayerBinding; var type=""; var id=""; var titleStr=""; var poster=""
