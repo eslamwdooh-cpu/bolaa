@@ -1,0 +1,18 @@
+
+package com.vola.tv
+import android.content.Intent
+import android.os.Bundle
+import android.widget.SearchView
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.GridLayoutManager
+import com.vola.tv.databinding.ActivityLibraryBinding
+import kotlin.concurrent.thread
+class LibraryActivity: AppCompatActivity(){
+  lateinit var b: ActivityLibraryBinding; var tab="live"; var allChannels=listOf<Channel>(); var allVod=listOf<Vod>(); var allSeries=listOf<SeriesItem>()
+  override fun onCreate(s:Bundle?){ super.onCreate(s); b=ActivityLibraryBinding.inflate(layoutInflater); setContentView(b.root); tab=intent.getStringExtra("tab")?:"live"; b.title.text=when(tab){ "vod"->"VOLA - أفلام"; "series"->"VOLA - مسلسلات"; "favs"->"VOLA - المفضلة"; "continue"->"VOLA - أكمل المشاهدة"; else->"VOLA - قنوات حية" }; b.rv.layoutManager=GridLayoutManager(this,4); b.search.setOnQueryTextListener(object: SearchView.OnQueryTextListener{ override fun onQueryTextSubmit(q:String?)=false; override fun onQueryTextChange(q:String?):Boolean{ filter(q?:""); return true } }); load() }
+  fun filter(q:String){ if(tab=="live"){ val f=if(q.isEmpty()) allChannels else allChannels.filter{ it.name.contains(q,true) }; b.rv.adapter=LiveAdapter(f){ playLive(it) } }; if(tab=="vod"){ val f=if(q.isEmpty()) allVod else allVod.filter{ it.name.contains(q,true) }; b.rv.adapter=VodAdapter(f){ playVod(it) } }; if(tab=="series"){ val f=if(q.isEmpty()) allSeries else allSeries.filter{ it.name.contains(q,true) }; b.rv.adapter=SeriesAdapter(f){ openSeries(it) } } }
+  fun load(){ val prefs=getSharedPreferences("vola", MODE_PRIVATE); val server=prefs.getString("server","")?:""; val user=prefs.getString("user","")?:""; val pass=prefs.getString("pass","")?:""; if(server.isEmpty()){ b.status.text="ادخل اشتراكك الأول"; return }; b.status.text="جاري تحميل..."; thread{ try{ when(tab){ "live"->{ allChannels=IptvApi.getLiveStreams(server,user,pass); runOnUiThread{ b.status.text="قنوات: "+allChannels.size; b.rv.adapter=LiveAdapter(allChannels){ playLive(it) } } }; "vod"->{ allVod=IptvApi.getVod(server,user,pass); runOnUiThread{ b.status.text="أفلام: "+allVod.size; b.rv.adapter=VodAdapter(allVod){ playVod(it) } } }; "series"->{ allSeries=IptvApi.getSeries(server,user,pass); runOnUiThread{ b.status.text="مسلسلات: "+allSeries.size; b.rv.adapter=SeriesAdapter(allSeries){ openSeries(it) } } }; "favs"->{ runOnUiThread{ b.status.text="المفضلة"; b.rv.adapter=FavAdapter(Store.getFavs(this,"vod")){} } }; "continue"->{ runOnUiThread{ b.status.text="أكمل المشاهدة"; b.rv.adapter=ContinueAdapter(Store.getContinue(this)){} } } } }catch(e:Exception){ runOnUiThread{ b.status.text="خطأ: "+e.message } } } }
+  fun playLive(ch:Channel){ val p=getSharedPreferences("vola", MODE_PRIVATE); val url=IptvApi.liveUrl(p.getString("server","")!!,p.getString("user","")!!,p.getString("pass","")!!,ch.id); val i=Intent(this, PlayerActivity::class.java); i.putExtra("url",url); i.putExtra("title",ch.name); i.putExtra("type","live"); i.putExtra("id",ch.id); startActivity(i) }
+  fun playVod(v:Vod){ val p=getSharedPreferences("vola", MODE_PRIVATE); val url=IptvApi.vodUrl(p.getString("server","")!!,p.getString("user","")!!,p.getString("pass","")!!,v.id,v.ext); val i=Intent(this, PlayerActivity::class.java); i.putExtra("url",url); i.putExtra("title",v.name); i.putExtra("type","vod"); i.putExtra("id",v.id); i.putExtra("poster",v.poster); startActivity(i) }
+  fun openSeries(s:SeriesItem){ val i=Intent(this, DetailsActivity::class.java); i.putExtra("seriesId",s.id); i.putExtra("name",s.name); i.putExtra("poster",s.poster); i.putExtra("plot",s.plot); startActivity(i) }
+}
